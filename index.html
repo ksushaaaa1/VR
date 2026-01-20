@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VR2</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+</head>
+<body>
+    <a-scene physics="debug: false" vr-mode-ui="enabled: true">
+        <a-sky color="#87CEEB"></a-sky>
+
+        <a-plane 
+            position="0 0 0" 
+            rotation="-90 0 0" 
+            width="50" 
+            height="50" 
+            color="#008000" 
+            static-body
+        ></a-plane>
+
+        <a-entity id="player" movement-controls="speed: 0.1" position="0 1.6 5" kinematic-body>
+            <a-camera>
+                <a-cursor fuse="true" fuse-timeout="500"></a-cursor>
+            </a-camera>
+        </a-entity>
+
+        <a-box id="box1" collectible position="-1 0.5 -4" rotation="0 45 0" color="#4CC3D9" dynamic-body="mass: 1"></a-box>
+        <a-sphere id="sphere1" collectible position="0 1.25 -20" radius="1.25" color="#EF2D5E" dynamic-body="mass: 1"></a-sphere>
+        <a-cylinder id="cylinder1" collectible position="10 0.75 -3" radius="0.5" height="1.5" color="#FFC65D" dynamic-body="mass: 1"></a-cylinder>
+        <a-tetrahedron id="tetrahedron1" collectible position="10 0.75 -10" color="#FFF" dynamic-body="mass: 1"></a-tetrahedron>
+        <a-torus id="torus1" collectible position="0 1.75 5" color="#333" dynamic-body="mass: 1"></a-torus>
+        <a-box id="box2" collectible position="-3 0.5 -2" rotation="0 45 0" color="#888" dynamic-body="mass: 1"></a-box>
+        <a-sphere id="sphere2" collectible position="-5 1.25 -10" radius="1.25" color="#444" dynamic-body="mass: 1"></a-sphere>
+        <a-cylinder id="cylinder2" collectible position="-10 0.75 -3" radius="0.5" height="1.5" color="#FFC65D" dynamic-body="mass: 1"></a-cylinder>
+
+        <a-entity 
+            gltf-model="https://cdn.aframe.io/test-models/models/Tree/cloud_tree.glb"
+            position="0 0 -20"
+            scale="2 2 2"
+            static-body
+        ></a-entity>
+
+        <a-entity 
+            gltf-model="https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF/Duck.gltf"
+            position="15 1 -10"
+            scale="2 2 2"
+            rotation="0 90 0"
+            static-body
+        ></a-entity>
+
+        <a-text 
+            id="scoreText"
+            value="Счет: 0 / 8"
+            position="-1.5 2.5 -2"
+            color="#FFFFFF"
+            align="center"
+            width="10"
+        ></a-text>
+
+        <a-text 
+            id="timerText"
+            value="Время: 60"
+            position="-1.5 2.2 -2"
+            color="#FFFFFF"
+            align="center"
+            width="10"
+        ></a-text>
+
+        <a-entity id="gameOverPanel" visible="false">
+            <a-plane 
+                position="0 1.5 -1.5" 
+                width="4" 
+                height="2" 
+                color="#333333" 
+                opacity="0.9"
+            ></a-plane>
+            <a-text 
+                id="gameOverText"
+                value="Игра окончена!\nСчет: 0"
+                position="0 2 -1.5"
+                color="#FF0000"
+                align="center"
+                width="6"
+            ></a-text>
+            <a-text 
+                id="restartText"
+                value="Кликни чтобы\nперезапустить"
+                position="0 1.3 -1.5"
+                color="#00FF00"
+                align="center"
+                width="6"
+            ></a-text>
+        </a-entity>
+
+        <a-entity light="type: ambient; color: #CCC"></a-entity>
+        <a-entity light="type: directional; color: #FFF; intensity: 0.5" position="-1 5 2"></a-entity>
+    </a-scene>
+
+    <script>
+        let score = 0;
+        const totalObjects = 8;
+        let timeLeft = 60;
+        let gameActive = true;
+        let timerInterval;
+
+        AFRAME.registerComponent('collectible', {
+            init: function () {
+                this.collected = false;
+                
+                this.el.addEventListener('click', () => {
+                    if (!gameActive || this.collected) return;
+                    this.collectObject();
+                });
+
+                this.el.addEventListener('collide', (e) => {
+                    if (!gameActive || this.collected) return;
+                    
+                    const player = document.querySelector('#player');
+                    if (e.detail.body.el === player) {
+                        this.collectObject();
+                    }
+                });
+            },
+            collectObject: function () {
+                this.collected = true;
+                
+                const el = this.el;
+                el.setAttribute('visible', 'false');
+                el.parentNode.removeChild(el);
+                
+                score++;
+                document.querySelector('#scoreText').setAttribute('value', `Счет: ${score} / ${totalObjects}`);
+
+                if (score === totalObjects) {
+                    endGame(true);
+                }
+            }
+        });
+
+        function initGame() {
+            score = 0;
+            timeLeft = 60;
+            gameActive = true;
+
+            document.querySelector('#scoreText').setAttribute('value', `Счет: ${score} / ${totalObjects}`);
+            document.querySelector('#timerText').setAttribute('value', `Время: ${timeLeft}`);
+            document.querySelector('#gameOverPanel').setAttribute('visible', 'false');
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            if (!gameActive) return;
+
+            timeLeft--;
+            document.querySelector('#timerText').setAttribute('value', `Время: ${timeLeft}`);
+
+            if (timeLeft <= 0) {
+                endGame(false);
+            }
+        }
+
+        function endGame(isWin) {
+            gameActive = false;
+            clearInterval(timerInterval);
+
+            const message = isWin 
+                ? "Победа! Все объекты собраны!\nСчет: " + score 
+                : "Время вышло!\nСчет: " + score;
+
+            document.querySelector('#gameOverText').setAttribute('value', message);
+            document.querySelector('#gameOverPanel').setAttribute('visible', 'true');
+
+            document.querySelector('#gameOverPanel').addEventListener('click', () => {
+                location.reload();
+            });
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
