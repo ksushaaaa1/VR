@@ -2,4 +2,4 @@
 #Здарова, это Ксюха и Аринуха!!!!
 
 -[Моя игра](https://ksushaaaa1.github.io/VR/)
-![ФОТОЧКА](https://cdn.openart.ai/stable_diffusion/9bc802ea0a93cee00830321e50b2d5bed6acd1b5_2000x2000.webp)
+![ФОТОЧКА](<img width="1280" height="720" alt="image" src="https://github.com/user-attachments/assets/d2b46747-0405-4866-80de-1398f38b9210" />)
